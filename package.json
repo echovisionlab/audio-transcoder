@@ -1,6 +1,6 @@
 {
   "name": "@echovisionlab/audio-transcoder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browser-local audio inspection and transcoding in module Web Workers.",
   "author": "Echo Vision Lab",
   "license": "PolyForm-Noncommercial-1.0.0",
