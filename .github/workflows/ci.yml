@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 11.22.0
+
+jobs:
+  validate:
+    name: Validate
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate package metadata
+        run: pnpm generate:package-metadata
+
+      - name: Generate codec asset metadata
+        run: pnpm generate:codec-asset-metadata
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run unit tests with coverage
+        run: pnpm test:coverage
+
+      - name: Clean package output
+        run: pnpm build:clean
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Copy runtime assets
+        run: pnpm build:copy-runtime-assets
+
+      - name: Verify package API
+        run: pnpm package:verify
+
+      - name: Dry-run package archive
+        run: pnpm package:pack
+
+      - name: Test CI scripts
+        run: pnpm test:scripts
+
+      - name: Build codec asset package
+        run: pnpm codec-assets:build
+
+      - name: Verify codec asset package
+        run: pnpm codec-assets:verify
+
+      - name: Dry-run codec asset archive
+        run: pnpm codec-assets:pack
+
+      - name: Typecheck production Vite demo
+        run: pnpm demo:typecheck
+
+      - name: Build production Vite demo
+        run: pnpm demo:build
+
+      - name: Verify production Vite demo
+        run: pnpm demo:verify-build
+
+  browser-matrix:
+    name: Browser / ${{ matrix.browser }}
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    runs-on: ubuntu-latest
+    env:
+      HOME: /root
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate package metadata
+        run: pnpm generate:package-metadata
+
+      - name: Generate codec asset metadata
+        run: pnpm generate:codec-asset-metadata
+
+      - name: Clean package output
+        run: pnpm build:clean
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Copy runtime assets
+        run: pnpm build:copy-runtime-assets
+
+      - name: Build codec asset package
+        run: pnpm codec-assets:build
+
+      - name: Run browser matrix
+        run: pnpm test:browser --project=${{ matrix.browser }}
+
+  verify:
+    name: verify
+    if: always()
+    needs: [validate, browser-matrix]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify required CI results
+        env:
+          BROWSER_RESULT: ${{ needs.browser-matrix.result }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: |
+          if [ "${VALIDATE_RESULT}" = "success" ]; then
+            if [ "${BROWSER_RESULT}" = "success" ]; then
+              exit 0
+            fi
+          fi
+          if [ "${VALIDATE_RESULT}" = "skipped" ]; then
+            if [ "${BROWSER_RESULT}" = "skipped" ]; then
+              exit 0
+            fi
+          fi
+          echo "Validate: ${VALIDATE_RESULT}" >&2
+          echo "Browser matrix: ${BROWSER_RESULT}" >&2
+          exit 1

@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.artifacts
+playwright-report
+test-results
+src/generated/package-metadata.ts
+src/generated/codec-asset-metadata.ts
+*.tsbuildinfo
+.DS_Store

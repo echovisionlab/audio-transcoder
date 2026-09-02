@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "abiVersion": 1,
+  "assets": {
+    "aac": {
+      "path": "wasm/aac.wasm",
+      "bytes": 511450,
+      "sha256": "90c75819c422afbbb2feb0ba8e9e4ec94a004d800799cfa083182359e5497efc"
+    },
+    "flac": {
+      "path": "wasm/flac.wasm",
+      "bytes": 112070,
+      "sha256": "c5af8358bb1ccc99ef3922c15a676aa8c07915ac7c5635cf3a599375fc56ee86"
+    },
+    "mp3": {
+      "path": "wasm/mp3.wasm",
+      "bytes": 127587,
+      "sha256": "b0e3a6768c25baf7103557f31ac0f18f86be721796e999605cc9544090e72315"
+    },
+    "ogg-opus": {
+      "path": "wasm/ogg-opus.wasm",
+      "bytes": 222658,
+      "sha256": "ec1d29d65a7e1957e9551e55cc1a74d3679dc8d4c26df4287350590cc1e7734a"
+    },
+    "resampler-fast": {
+      "path": "wasm/resampler-fast.wasm",
+      "bytes": 20403,
+      "sha256": "2c2bf7a58a90af6c8dcb76a98dc90a042cec538e326ae67f6d69aa907d9f93a0"
+    },
+    "resampler-balanced": {
+      "path": "wasm/resampler-balanced.wasm",
+      "bytes": 100305,
+      "sha256": "d68f10254f7b694990092943930e43bc4fa9a2f9775da452490764a062112f1c"
+    },
+    "resampler-best": {
+      "path": "wasm/resampler-best.wasm",
+      "bytes": 1371545,
+      "sha256": "47d03b079057d17bbefcf3b17ea92fc2b0a6ba027b5ea13154b4e2f35177b7d0"
+    }
+  }
+}

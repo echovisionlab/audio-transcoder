@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "artifact": {
+    "path": "src/stream/runtime/aac.generated.mjs",
+    "sha256": "e1e8467b25fa8401580617ed359067b07c8ceaf5ae662112265040cdba686283",
+    "sizeBytes": 15501
+  },
+  "wasmArtifact": {
+    "path": "codec-build/aac/aac.wasm",
+    "sha256": "90c75819c422afbbb2feb0ba8e9e4ec94a004d800799cfa083182359e5497efc",
+    "sizeBytes": 511450
+  },
+  "bridge": {
+    "licensePath": "codec-build/aac/LICENSE.BRIDGE-MPL-2.0.txt",
+    "license": "MPL-2.0",
+    "path": "codec-build/aac/bridge.c",
+    "sha256": "374167016823bab3e52feb726c1a51d2e6d12c8f85ed41dd9c3975e9490c23dd",
+    "sourceCommit": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "sourcePackage": "@mediabunny/aac-encoder@1.50.9",
+    "sourcePackageGitHead": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "upstreamArchivePath": "package/src/bridge.c",
+    "upstreamPath": "packages/aac-encoder/src/bridge.c",
+    "upstreamSha256": "a04e07961c47ca113710398ac8e2ea39b21e2eb1bd109685cd909a3e09f937dc",
+    "modifications": [
+      "Unreference each reusable AVPacket before receive.",
+      "Make the reusable AVFrame writable before every send.",
+      "Return the FFmpeg flush status to JavaScript.",
+      "Expose FFmpeg EAGAIN and human-readable error descriptions to JavaScript."
+    ]
+  },
+  "ffmpeg": {
+    "archiveSha256": "464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c",
+    "commit": "38b88335f99e76ed89ff3c93f877fdefce736c13",
+    "license": "LGPL-2.1-or-later",
+    "licensePath": "codec-build/aac/LICENSE.FFMPEG-LGPL-2.1.txt",
+    "tag": "n8.1.2",
+    "url": "https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz"
+  },
+  "toolchain": {
+    "emccCommit": "263db4cffa6f9fc2ec514a70abac81362ea41849",
+    "emscriptenVersion": "5.0.7",
+    "image": "emscripten/emsdk@sha256:19b3a361d84262c1cd133a29fb84368678bab32aee47e074fcd83a216566330c",
+    "platform": "linux/arm64/v8",
+    "sourceDateEpoch": 1781664417
+  }
+}

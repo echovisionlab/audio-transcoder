@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "abiVersion": 1,
+  "artifact": {
+    "path": "codec-build/flac/flac.wasm",
+    "sha256": "c5af8358bb1ccc99ef3922c15a676aa8c07915ac7c5635cf3a599375fc56ee86",
+    "sizeBytes": 112070
+  },
+  "bridge": {
+    "license": "MPL-2.0",
+    "licensePath": "THIRD_PARTY_LICENSES/MEDIABUNNY-MPL-2.0.txt",
+    "path": "codec-build/flac/bridge.c",
+    "sha256": "4ce0a66e373d7c8343a7612aa9b14c6fb74136d5642511cad46c2a53e958762f",
+    "sourceCommit": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "sourcePackage": "@mediabunny/flac-encoder@1.50.9",
+    "sourcePackageGitHead": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "upstreamArchivePath": "package/src/bridge.c",
+    "upstreamPath": "packages/flac-encoder/src/bridge.c",
+    "upstreamSha256": "30d970dc069f934544578880a56c32641739f3ee91ff4be51629466a543aad98",
+    "modifications": [
+      "Replace the nested Worker protocol and inlined Emscripten module with a synchronous raw-WASM ABI.",
+      "Prefix every application export with flac_ and expose ABI version 1.",
+      "Add explicit context destruction, checked allocation growth, and separate finish/reset operations.",
+      "Preserve MediaBunny's compression level, format matrix, PCM conversion, and frame metadata behavior."
+    ]
+  },
+  "libflac": {
+    "archiveSha256": "4ace54db53e274f6c73999a644b0a11410f67e5c35c06e4aaa8e5457bbf59f9d",
+    "commit": "3f1ecff843dd1b8c07fbb5f59425a4ec71fe4f6c",
+    "license": "Xiph-BSD",
+    "licensePath": "THIRD_PARTY_LICENSES/LIBFLAC-XIPH-BSD.txt",
+    "url": "https://github.com/xiph/flac/archive/3f1ecff843dd1b8c07fbb5f59425a4ec71fe4f6c.tar.gz"
+  },
+  "toolchain": {
+    "emccCommit": "263db4cffa6f9fc2ec514a70abac81362ea41849",
+    "emscriptenVersion": "5.0.7",
+    "image": "emscripten/emsdk@sha256:19b3a361d84262c1cd133a29fb84368678bab32aee47e074fcd83a216566330c",
+    "platform": "linux/arm64/v8",
+    "sourceDateEpoch": 1772631043
+  }
+}

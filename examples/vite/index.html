@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Audio Transcoder Lab</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <h1>Audio Transcoder Lab</h1>
+        <dl class="engine-meta" aria-label="Engine status">
+          <div>
+            <dt>Engine</dt>
+            <dd id="engine-version">Loading</dd>
+          </div>
+          <div>
+            <dt>Storage</dt>
+            <dd id="storage-mode">Checking</dd>
+          </div>
+        </dl>
+      </header>
+
+      <main>
+        <section class="source-panel" aria-labelledby="source-heading">
+          <div class="section-heading">
+            <h2 id="source-heading">Files</h2>
+            <button id="pick-files" class="button button-primary" type="button">Choose files</button>
+          </div>
+
+          <input
+            id="file-input"
+            type="file"
+            accept="audio/*,.aif,.aiff,.caf,.flac,.mp3,.wav"
+            multiple
+            hidden
+          />
+          <div
+            id="drop-zone"
+            class="drop-zone"
+            role="button"
+            tabindex="0"
+            aria-label="Choose audio files or drop them here"
+            aria-describedby="file-admission-status"
+          >
+            <strong>Drop audio files</strong>
+            <span>or choose files</span>
+          </div>
+
+          <p
+            id="file-admission-status"
+            class="admission-status"
+            role="alert"
+            hidden
+          ></p>
+
+          <div class="source-actions">
+            <button id="add-tone" class="button" type="button">Add test tone</button>
+          </div>
+        </section>
+
+        <section class="target-panel" aria-labelledby="target-heading">
+          <div class="section-heading target-heading-row">
+            <h2 id="target-heading">Batch target</h2>
+            <div class="runtime-command">
+              <div
+                class="runtime-feedback"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <span
+                  id="output-runtime-status"
+                  class="runtime-status"
+                  data-state="checking"
+                >Checking output codecs</span>
+                <span id="output-runtime-detail" class="runtime-detail"
+                  >Checking the selected output target.</span
+                >
+              </div>
+              <button
+                id="retry-output-check"
+                class="button button-small retry-output-check"
+                type="button"
+                hidden
+              >Retry output check</button>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <label class="field">
+              <span>Preset</span>
+              <select id="preset" name="preset"></select>
+            </label>
+
+            <label class="field">
+              <span>Sample rate</span>
+              <select id="sample-rate" name="sample-rate">
+                <option value="preserve">Preserve</option>
+                <option value="44100">44.1 kHz</option>
+                <option value="48000">48 kHz</option>
+                <option value="96000">96 kHz</option>
+                <option value="192000">192 kHz</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Channels</span>
+              <select id="channels" name="channels">
+                <option value="preserve">Preserve</option>
+                <option value="1">Mono</option>
+                <option value="2">Stereo</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Dither</span>
+              <select id="dither" name="dither">
+                <option value="auto">Auto</option>
+                <option value="tpdf">TPDF</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Container</span>
+              <select id="container" name="container">
+                <option value="auto">Auto (RIFF or RF64)</option>
+                <option value="riff">RIFF (standard WAV)</option>
+                <option value="rf64">RF64 (large WAV)</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="queue-panel" aria-labelledby="queue-heading">
+          <div class="queue-toolbar">
+            <div>
+              <h2 id="queue-heading">Queue</h2>
+              <p id="queue-summary" aria-live="polite">0 files</p>
+            </div>
+            <div class="queue-actions">
+              <button id="clear-all" class="button" type="button" disabled>Clear</button>
+              <button id="cancel-all" class="button button-danger" type="button" disabled>Cancel</button>
+              <button id="convert-all" class="button button-primary" type="button" disabled>Convert all</button>
+            </div>
+          </div>
+
+          <div class="table-scroll" tabindex="0" aria-label="Audio conversion queue">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">File</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Progress</th>
+                  <th scope="col">Output</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="file-list">
+                <tr class="empty-row">
+                  <td colspan="6">Add audio files</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="file-row-template">
+      <tr class="file-row" data-status="queued">
+        <td class="file-cell">
+          <span class="file-name"></span>
+          <span class="file-size"></span>
+        </td>
+        <td class="source-cell">
+          <span class="source-main"></span>
+          <span class="source-meta"></span>
+        </td>
+        <td class="status-cell">
+          <span class="status-text">Queued</span>
+          <span class="status-detail"></span>
+        </td>
+        <td class="progress-cell">
+          <progress class="progress-bar" max="1" value="0">0%</progress>
+          <span class="progress-value">0%</span>
+        </td>
+        <td class="output-slot">Pending</td>
+        <td class="row-actions">
+          <button class="button button-small convert-one" type="button">Convert</button>
+          <button class="button button-small remove-one" type="button">Remove</button>
+        </td>
+      </tr>
+    </template>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

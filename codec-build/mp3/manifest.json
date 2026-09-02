@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "abiVersion": 1,
+  "artifact": {
+    "path": "codec-build/mp3/mp3.wasm",
+    "sha256": "b0e3a6768c25baf7103557f31ac0f18f86be721796e999605cc9544090e72315",
+    "sizeBytes": 127587
+  },
+  "bridge": {
+    "path": "codec-build/mp3/bridge.c",
+    "sha256": "9483d61150907a9ee0944493b898149ccb74f7ec218b16735dba7c0254180606",
+    "license": "MPL-2.0",
+    "licensePath": "THIRD_PARTY_LICENSES/MEDIABUNNY-MPL-2.0.txt",
+    "sourceCommit": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "sourcePackage": "@mediabunny/mp3-encoder@1.50.9",
+    "sourcePackageGitHead": "794b84884f1e23cb6241689b3563190d138bbd9a",
+    "upstreamArchivePath": "package/src/lame-bridge.c",
+    "upstreamPath": "packages/mp3-encoder/src/lame-bridge.c",
+    "upstreamSha256": "94cc6b7ae703bd9b30f9af9afdf82c7f7c184a2dcf0c2eec0052ebdc91eb3d95",
+    "upstreamRawWasmSha256": "d0b109db83c153b81ba0080fa2163664dff1e341b154edda6d40bc4b6fbc355e",
+    "modifications": [
+      "Replace the nested Blob Worker and Emscripten JS glue with a raw standalone WASM ABI.",
+      "Validate the exact Echo Vision Lab MP3 channel, sample-rate, and bitrate matrix in the bridge.",
+      "Expose caller-owned planar PCM and encoded-output buffers through mp3_* exports.",
+      "Retain encoder configuration across flush/reset without retaining input references."
+    ]
+  },
+  "lame": {
+    "version": "3.100",
+    "url": "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
+    "archiveSha256": "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
+    "license": "LGPL-2.0-or-later",
+    "licensePath": "THIRD_PARTY_LICENSES/LAME-3.100-LGPL-2.0-or-later.txt"
+  },
+  "toolchain": {
+    "emccCommit": "263db4cffa6f9fc2ec514a70abac81362ea41849",
+    "emscriptenVersion": "5.0.7",
+    "image": "emscripten/emsdk@sha256:19b3a361d84262c1cd133a29fb84368678bab32aee47e074fcd83a216566330c",
+    "platform": "linux/arm64/v8",
+    "sourceDateEpoch": 1784408064
+  },
+  "runtime": {
+    "initialMemoryBytes": 4194304,
+    "maximumMemoryBytes": 67108864,
+    "stackBytes": 262144,
+    "simd": true,
+    "nestedWorker": false
+  }
+}

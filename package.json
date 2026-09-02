@@ -1,0 +1,110 @@
+{
+  "name": "@echovisionlab/audio-transcoder",
+  "version": "0.1.0",
+  "description": "Browser-local audio inspection and transcoding in module Web Workers.",
+  "author": "Echo Vision Lab",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/stream/worker-entry.js",
+    "./dist/worker/entry.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echovisionlab/audio-transcoder.git"
+  },
+  "engines": {
+    "node": "24.19.0"
+  },
+  "packageManager": "pnpm@11.22.0+sha512.1ff870c4c6133dfd88fb2afc46dd13d47f09c9794b438c6fdb47ca98caf3bc16381ee0be93a091b8e3824cf01f889f46d7d9e20910fb0be1ab0fb5baa80dd621",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "LICENSE.md",
+    "README.md",
+    "THIRD_PARTY_LICENSES",
+    "THIRD_PARTY_NOTICES.md",
+    "codec-build/aac/LICENSE.BRIDGE-MPL-2.0.txt",
+    "codec-build/aac/LICENSE.FFMPEG-LGPL-2.1.txt",
+    "codec-build/aac/README.md",
+    "codec-build/aac/bridge.c",
+    "codec-build/aac/build.sh",
+    "codec-build/aac/manifest.json",
+    "codec-build/aac/patch-generated-glue.mjs",
+    "codec-build/aac/verify.mjs",
+    "codec-build/flac/README.md",
+    "codec-build/flac/bridge.c",
+    "codec-build/flac/build.sh",
+    "codec-build/flac/manifest.json",
+    "codec-build/flac/verify.mjs",
+    "codec-build/mp3/README.md",
+    "codec-build/mp3/bridge.c",
+    "codec-build/mp3/build.sh",
+    "codec-build/mp3/manifest.json",
+    "codec-build/mp3/verify.mjs",
+    "docs",
+    "dist",
+    "scripts/ogg-opus-build-wasm.sh",
+    "scripts/ogg-opus-embed-wasm.mjs",
+    "scripts/codec-asset-package-contract.mjs",
+    "scripts/resampler-build-wasm.sh",
+    "scripts/resampler-embed-wasm.mjs",
+    "scripts/verify-release-state.mjs",
+    "scripts/verify-published-codec-assets.mjs",
+    "vendor"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "build:clean": "node ./scripts/clean-dist.mjs",
+    "build:copy-runtime-assets": "node ./scripts/copy-runtime-assets.mjs",
+    "codec-assets:build": "node ./scripts/build-codec-asset-package.mjs",
+    "codec-assets:verify": "node ./scripts/verify-codec-asset-package.mjs",
+    "codec-assets:pack": "npm pack --dry-run --json ./.artifacts/codec-assets-package",
+    "codec-assets:verify-published": "node ./scripts/verify-published-codec-assets.mjs",
+    "demo:typecheck": "tsc --project examples/vite/tsconfig.json",
+    "demo:build": "vite build --config examples/vite/vite.config.ts",
+    "demo:verify-build": "node ./scripts/verify-demo-build.mjs",
+    "demo:vite": "vite --config examples/vite/vite.config.ts",
+    "generate:package-metadata": "node ./scripts/generate-package-metadata.mjs",
+    "generate:codec-asset-metadata": "node ./scripts/generate-codec-asset-metadata.mjs",
+    "package:verify": "node ./scripts/verify-package.mjs",
+    "package:pack": "npm pack --dry-run",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "test:coverage": "vitest run --coverage",
+    "test:scripts": "node --test ./scripts/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker/entry.d.ts",
+      "import": "./dist/worker/entry.js"
+    },
+    "./stream-worker": {
+      "types": "./dist/stream/worker-entry.d.ts",
+      "import": "./dist/stream/worker-entry.js"
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "typescript": "7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10",
+    "webpack": "^5.109.2"
+  },
+  "dependencies": {
+    "mediabunny": "1.55.1"
+  },
+  "homepage": "https://github.com/echovisionlab/audio-transcoder#readme",
+  "bugs": {
+    "url": "https://github.com/echovisionlab/audio-transcoder/issues"
+  }
+}

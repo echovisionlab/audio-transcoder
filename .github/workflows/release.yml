@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 11.22.0
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-package:
+    name: Publish Package
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the exact release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js for npm trusted publishing
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate package metadata
+        run: pnpm generate:package-metadata
+
+      - name: Generate codec asset metadata
+        run: pnpm generate:codec-asset-metadata
+
+      - name: Clean package output
+        run: pnpm build:clean
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Copy runtime assets
+        run: pnpm build:copy-runtime-assets
+
+      - name: Verify release state
+        run: node ./scripts/verify-release-state.mjs
+
+      - name: Wait for the exact GitHub release assets on jsDelivr
+        run: |
+          for attempt in $(seq 1 24); do
+            if node ./scripts/verify-published-codec-assets.mjs; then
+              exit 0
+            fi
+            if [ "${attempt}" -eq 24 ]; then
+              echo "The exact GitHub release assets did not become available on jsDelivr." >&2
+              exit 1
+            fi
+            sleep 15
+          done
+
+      - name: Publish the engine package with npm OIDC
+        run: |
+          set -euo pipefail
+          version=$(node --print "require('./package.json').version")
+          lookup_error="${RUNNER_TEMP}/audio-transcoder-npm-view-error.log"
+          set +e
+          published_version="$(npm view "@echovisionlab/audio-transcoder@${version}" version 2>"${lookup_error}")"
+          lookup_status=$?
+          set -e
+
+          if [ "${lookup_status}" -eq 0 ] && [ "${published_version}" = "${version}" ]; then
+            echo "@echovisionlab/audio-transcoder@${version} is already published."
+          elif [ "${lookup_status}" -ne 0 ] && grep -Eq 'E404|404 Not Found' "${lookup_error}"; then
+            npm publish --access public --provenance
+          else
+            cat "${lookup_error}" >&2
+            echo "Could not establish npm publication state for @echovisionlab/audio-transcoder@${version}." >&2
+            exit 1
+          fi
