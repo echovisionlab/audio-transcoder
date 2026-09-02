@@ -112,7 +112,7 @@ test('runs every advertised output preset in a real Worker', async ({ page }) =>
       expect(result.oggFinalGranule).toBe(
         (result.oggPreSkip ?? 0) + result.expectedTotalSamples,
       );
-      expect(result.oggSerial).toBe(0x4453_5542);
+      expect(result.oggSerial).toBe(0x4155_4430);
       expect(result.bitDepth).toBeNull();
       expect(result.bitrate).toBeNull();
       expect(result.formatTag).toBeNull();
@@ -457,7 +457,7 @@ test('encodes the exact Ogg Opus preset-channel matrix and rejects non-48k targe
     expect(encoded.oggFinalGranule).toBe(
       (encoded.oggPreSkip ?? 0) + encoded.expectedTotalSamples,
     );
-    expect(encoded.oggSerial).toBe(0x4453_5542);
+    expect(encoded.oggSerial).toBe(0x4155_4430);
     expect(encoded.bytesWritten).toBe(encoded.finalSize);
     expect(encoded.closedBeforeResolved).toBe(true);
     expect(encoded.writes).toBeGreaterThan(0);
