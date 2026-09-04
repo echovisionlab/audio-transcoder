@@ -8,6 +8,7 @@ import type {
   AudioStreamWorkerRequest,
   AudioStreamWorkerResponse,
 } from './protocol.js';
+import { createMessagePortOutput } from './output-port.js';
 import {
   createAudioTranscoderStreamWorkerPool,
   type CreateAudioTranscoderStreamWorkerPoolOptions,
@@ -1538,7 +1539,7 @@ class WorkerStub {
     if (post?.message.type !== 'transcode') {
       throw new Error(`No transcode output was posted for operation ${id}.`);
     }
-    const writer = post.message.output.getWriter();
+    const writer = createMessagePortOutput(post.message.output).getWriter();
     try {
       await writer.close();
     } finally {
