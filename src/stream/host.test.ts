@@ -124,7 +124,7 @@ describe('stream worker host', () => {
       engine: createEngine({ transcode }),
       postMessage,
     });
-    const output = new WritableStream();
+    const outputChannel = new MessageChannel();
 
     handle(messageEvent({
       id: 3,
@@ -135,7 +135,7 @@ describe('stream worker host', () => {
         outputChunkBytes: 131_072,
         pcmChunkBytes: 262_144,
       },
-      output,
+      output: { port: outputChannel.port1, type: 'message-port' },
       target: { presetId: 'wav-pcm16' },
       type: 'transcode',
     }));
@@ -144,7 +144,7 @@ describe('stream worker host', () => {
     expect(transcode).toHaveBeenCalledWith(
       expect.anything(),
       { presetId: 'wav-pcm16' },
-      output,
+      expect.any(WritableStream),
       expect.objectContaining({
         inputReadBytes: 65_536,
         maxOutputBytes: 524_288,
@@ -164,6 +164,7 @@ describe('stream worker host', () => {
       type: 'result',
       value: RESULT,
     });
+    outputChannel.port2.close();
   });
 
   it('forwards per-file support probes to the production engine API', async () => {

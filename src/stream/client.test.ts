@@ -12,6 +12,7 @@ import type {
   CreateAudioTranscoderStreamWorkerEngineOptions,
 } from "./contracts.js";
 import { createAudioTranscoderStreamWorkerEngine } from "./client.js";
+import { createMessagePortOutput } from "./output-port.js";
 import type {
   AudioStreamWorkerRequest,
   AudioStreamWorkerResponse,
@@ -182,7 +183,10 @@ describe("stream worker client", () => {
     expect(worker.posts[1]?.transfer).toHaveLength(1);
     expect(worker.posts[1]?.transfer[0]).not.toBe(output);
     expect(worker.posts[1]?.message).toMatchObject({
-      output: worker.posts[1]?.transfer[0],
+      output: {
+        port: worker.posts[1]?.transfer[0],
+        type: "message-port",
+      },
     });
     worker.emit({ id: 2, progress: PROGRESS, type: "progress" });
     await worker.closePostedOutput(2);
@@ -889,7 +893,7 @@ describe("stream worker client", () => {
         },
       }),
     );
-    await expect(worker.writePostedOutput(2, chunk)).rejects.toBe(writeError);
+    await expect(worker.writePostedOutput(2, chunk)).rejects.toMatchObject({ message: writeError.message });
     worker.emit({
       id: 2,
       operation: "transcode",
@@ -951,7 +955,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeError);
+    ).rejects.toMatchObject({ code: writeError.code, message: writeError.message });
     worker.emit({
       error: { message: writeError.message, name: "Error" },
       id: 1,
@@ -982,7 +986,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeReason);
+    ).rejects.toMatchObject({ message: writeReason });
     worker.emit({
       error: { message: writeReason, name: "Error" },
       id: 1,
@@ -1013,7 +1017,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeReason);
+    ).rejects.toMatchObject({ message: writeReason.message });
     worker.emit({
       error: { message: writeReason.message, name: "Error" },
       id: 1,
@@ -1273,6 +1277,7 @@ describe("stream worker client", () => {
     );
     const queued = engine.inspect({ blob: new Blob(["b"]) });
     const closing = firstWorker.closePostedOutput(1);
+    await closing;
     firstWorker.emit({
       id: 1,
       operation: "transcode",
@@ -1362,7 +1367,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeError);
+    ).rejects.toMatchObject({ code: writeError.code, message: writeError.message });
     worker.emit({
       error: {
         code: "INVALID_AUDIO_DATA",
@@ -1403,7 +1408,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeError);
+    ).rejects.toMatchObject({ code: writeError.code, message: writeError.message });
     worker.emit({
       error: {
         code: writeError.code,
@@ -1438,7 +1443,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeError);
+    ).rejects.toMatchObject({ message: writeError.message });
     worker.emit({
       error: {
         message: "worker conversion failed",
@@ -1474,7 +1479,7 @@ describe("stream worker client", () => {
         position: 0,
         type: "write",
       }),
-    ).rejects.toBe(writeError);
+    ).rejects.toMatchObject({ message: writeError.message });
     worker.emit({
       error: {
         code: "INVALID_AUDIO_DATA",
@@ -1492,7 +1497,7 @@ describe("stream worker client", () => {
     await engine.dispose();
   });
 
-  it("keeps a code-less Worker error primary after a transferred-stream abort", async () => {
+  it("keeps a code-less Worker error primary after a Worker output abort", async () => {
     const worker = new WorkerStub();
     const engine = createEngine(worker);
     const remoteAbort = new AudioTranscoderError(
@@ -2001,17 +2006,18 @@ describe("stream worker client", () => {
         },
       },
     );
+    const rejection = expect(result).rejects.toBe(listenerError);
 
     worker.emit({ id: 1, progress: PROGRESS, type: "progress" });
     worker.emit({ id: 1, progress: PROGRESS, type: "progress" });
-    await worker.abortPostedOutput(1, listenerError);
+    await worker.abortPostedOutput(1, listenerError).catch(() => undefined);
     worker.emit({
       id: 1,
       operation: "transcode",
       type: "result",
       value: RESULT,
     });
-    await expect(result).rejects.toBe(listenerError);
+    await rejection;
     engine.terminate();
   });
 
@@ -2031,19 +2037,20 @@ describe("stream worker client", () => {
         signal: controller.signal,
       },
     );
+    const rejection = expect(result).rejects.toMatchObject({
+      code: "OPERATION_ABORTED",
+      message: "listener stopped",
+    });
 
     worker.emit({ id: 1, progress: PROGRESS, type: "progress" });
-    await worker.abortPostedOutput(1, "listener stopped");
+    await worker.abortPostedOutput(1, "listener stopped").catch(() => undefined);
     worker.emit({
       id: 1,
       operation: "transcode",
       type: "result",
       value: RESULT,
     });
-    await expect(result).rejects.toMatchObject({
-      code: "OPERATION_ABORTED",
-      message: "listener stopped",
-    });
+    await rejection;
     expect(
       worker.posts.filter(({ message }) => message.type === "cancel"),
     ).toHaveLength(1);
@@ -2329,6 +2336,7 @@ class WorkerStub {
   readonly posts: WorkerPost[] = [];
   readonly postTypes: AudioStreamWorkerRequest["type"][] = [];
   readonly configurations: AudioStreamWorkerRequest[] = [];
+  readonly outputs = new Map<number, WritableStream<AudioStreamOutputChunk>>();
   terminateCalls = 0;
   throwNextOperation = false;
   throwOnCancel = false;
@@ -2425,13 +2433,19 @@ class WorkerStub {
   }
 
   private postedOutput(id: number): WritableStream<AudioStreamOutputChunk> {
+    const existing = this.outputs.get(id);
+    if (existing !== undefined) {
+      return existing;
+    }
     const post = this.posts.find(
       ({ message }) => message.type === "transcode" && message.id === id,
     );
     if (post?.message.type !== "transcode") {
       throw new Error(`No transcode output was posted for operation ${id}.`);
     }
-    return post.message.output;
+    const output = createMessagePortOutput(post.message.output);
+    this.outputs.set(id, output);
+    return output;
   }
 }
 

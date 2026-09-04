@@ -724,7 +724,7 @@ test('uses an OPFS or bounded-memory output session and cleans it up', async ({
   );
 });
 
-test('preserves destination errors across a transferred stream', async ({
+test('preserves destination errors across the Worker output bridge', async ({
   page,
 }) => {
   await page.goto('/test/browser/');

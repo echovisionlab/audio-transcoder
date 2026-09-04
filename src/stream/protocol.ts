@@ -3,7 +3,6 @@ import type {
   AudioStreamInputSupportResult,
   AudioStreamInspection,
   AudioStreamOperationOptions,
-  AudioStreamOutput,
   AudioStreamOutputProbeTarget,
   AudioStreamOutputSupportResult,
   AudioStreamProgress,
@@ -32,6 +31,11 @@ export interface AudioStreamWorkerAssetLoadState {
   readonly totalBytes: number | null;
 }
 
+export interface AudioStreamWorkerOutputPort {
+  readonly port: MessagePort;
+  readonly type: 'message-port';
+}
+
 export type AudioStreamWorkerRequest =
   | {
       readonly codecAssets: AudioStreamWorkerCodecAssetConfiguration;
@@ -58,7 +62,7 @@ export type AudioStreamWorkerRequest =
       readonly id: number;
       readonly input: AudioStreamInput;
       readonly options: StreamWorkerOperationOptions;
-      readonly output: AudioStreamOutput;
+      readonly output: AudioStreamWorkerOutputPort;
       readonly target: AudioStreamTarget;
       readonly type: 'transcode';
     }

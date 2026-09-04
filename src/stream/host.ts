@@ -8,6 +8,7 @@ import type {
 } from './protocol.js';
 import { serializeWorkerError } from '../worker/serialized-error.js';
 import { AudioTranscoderError } from '../errors.js';
+import { createMessagePortOutput } from './output-port.js';
 
 interface CreateStreamWorkerMessageHandlerOptions {
   readonly engine: AudioTranscoderStreamEngine;
@@ -99,7 +100,7 @@ async function executeOperation(
         : await options.engine.transcode(
             request.input,
             request.target,
-            request.output,
+            createMessagePortOutput(request.output),
             {
               ...baseOptions,
               onProgress(progress: AudioStreamProgress): void {

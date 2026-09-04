@@ -4,7 +4,6 @@ import type {
   AudioStreamInspection,
   AudioStreamOperationOptions,
   AudioStreamOutput,
-  AudioStreamOutputChunk,
   AudioStreamOutputProbeOptions,
   AudioStreamOutputProbeTarget,
   AudioStreamOutputSupportResult,
@@ -31,6 +30,7 @@ import {
 } from "../worker/serialized-error.js";
 import { AUDIO_TRANSCODER_STREAM_CAPABILITIES } from "./capabilities.js";
 import type { AudioTranscoderStreamCapabilities } from "./capabilities.js";
+import { createMessagePortOutputBridge } from "./output-port.js";
 import {
   createAudioStreamOutputProbeCoordinator,
   probeAudioStreamOutputSupport,
@@ -73,7 +73,7 @@ type OutputBridgeFailureOrigin =
   | "client-abort"
   | "destination-close"
   | "destination-write"
-  | "transferred-stream-abort";
+  | "worker-output-abort";
 
 interface OutputBridgeFailure {
   readonly origin: OutputBridgeFailureOrigin;
@@ -92,7 +92,8 @@ interface OutputBridge {
   commit(): Promise<OutputBridgeSettlement>;
   readonly completion: Promise<OutputBridgeSettlement>;
   readonly ready: Promise<OutputBridgeReadiness>;
-  readonly stream: AudioStreamOutput;
+  readonly requestOutput: import("./protocol.js").AudioStreamWorkerOutputPort;
+  readonly transfer: Transferable[];
 }
 
 /** Creates a serial, bounded-memory module Worker for streaming operations. */
@@ -532,12 +533,12 @@ export function createAudioTranscoderStreamWorkerEngine(
           id,
           input,
           options: workerOptions(operationOptions),
-          output: bridge.stream,
+          output: bridge.requestOutput,
           target,
           type: "transcode",
         }),
         operationOptions,
-        [bridge.stream as unknown as Transferable],
+        bridge.transfer,
         bridge,
       );
     },
@@ -849,89 +850,7 @@ function createOutputBridge(output: AudioStreamOutput): OutputBridge {
     );
   }
 
-  const writer = output.getWriter();
-  let abortPromise: Promise<void> | undefined;
-  let readinessState: OutputBridgeReadiness | undefined;
-  let settled = false;
-  let resolveReady!: (readiness: OutputBridgeReadiness) => void;
-  let resolveCompletion!: (settlement: OutputBridgeSettlement) => void;
-  const ready = new Promise<OutputBridgeReadiness>((resolve) => {
-    resolveReady = resolve;
-  });
-  const completion = new Promise<OutputBridgeSettlement>((resolve) => {
-    resolveCompletion = resolve;
-  });
-
-  const setReadiness = (readiness: OutputBridgeReadiness): void => {
-    if (readinessState === undefined) {
-      readinessState = readiness;
-      resolveReady(readiness);
-    }
-  };
-  const settle = (settlement: OutputBridgeSettlement): void => {
-    settled = true;
-    writer.releaseLock();
-    resolveCompletion(settlement);
-  };
-  const fail = (reason: unknown, origin: OutputBridgeFailureOrigin): void => {
-    const failure = { origin, reason, status: "failed" } as const;
-    setReadiness(failure);
-    settle(failure);
-  };
-  const abortOnce = (
-    reason: unknown,
-    origin: Extract<
-      OutputBridgeFailureOrigin,
-      "client-abort" | "transferred-stream-abort"
-    >,
-  ): Promise<void> => {
-    if (settled) {
-      return Promise.resolve();
-    }
-    const aborting = writer.abort(reason);
-    // Releasing ownership does not need to wait for a non-cooperative sink's
-    // abort hook. Disposal still tracks the hook's eventual settlement.
-    fail(reason, origin);
-    return aborting;
-  };
-  const abort = (reason: unknown): Promise<void> => {
-    abortPromise ??= abortOnce(reason, "client-abort");
-    return abortPromise;
-  };
-  const abortTransferredStream = (reason: unknown): Promise<void> => {
-    abortPromise ??= abortOnce(reason, "transferred-stream-abort");
-    return abortPromise;
-  };
-  const commit = (): Promise<OutputBridgeSettlement> => {
-    const closing = writer.close();
-    return closing.then(
-      () => {
-        settle({ reason: undefined, status: "closed" });
-        return completion;
-      },
-      (error: unknown) => {
-        fail(error, "destination-close");
-        return completion;
-      },
-    );
-  };
-
-  const stream = new WritableStream<AudioStreamOutputChunk>({
-    abort: abortTransferredStream,
-    close() {
-      setReadiness({ status: "ready" });
-    },
-    async write(chunk) {
-      try {
-        await writer.write(chunk);
-      } catch (error) {
-        fail(error, "destination-write");
-        throw error;
-      }
-    },
-  });
-
-  return { abort, commit, completion, ready, stream };
+  return createMessagePortOutputBridge(output) as OutputBridge;
 }
 
 function createWorker(workerFactory: (() => Worker) | undefined): Worker {
