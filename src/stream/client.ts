@@ -30,7 +30,12 @@ import {
 } from "../worker/serialized-error.js";
 import { AUDIO_TRANSCODER_STREAM_CAPABILITIES } from "./capabilities.js";
 import type { AudioTranscoderStreamCapabilities } from "./capabilities.js";
-import { createMessagePortOutputBridge } from "./output-port.js";
+import {
+  createMessagePortOutputBridge,
+  type MessagePortOutputBridge,
+  type OutputBridgeFailureOrigin,
+  type OutputBridgeSettlement,
+} from "./output-port.js";
 import {
   createAudioStreamOutputProbeCoordinator,
   probeAudioStreamOutputSupport,
@@ -69,32 +74,7 @@ interface QueuedOperation {
   readonly transfer: Transferable[];
 }
 
-type OutputBridgeFailureOrigin =
-  | "client-abort"
-  | "destination-close"
-  | "destination-write"
-  | "worker-output-abort";
-
-interface OutputBridgeFailure {
-  readonly origin: OutputBridgeFailureOrigin;
-  readonly reason: unknown;
-  readonly status: "failed";
-}
-
-type OutputBridgeSettlement =
-  | OutputBridgeFailure
-  | { readonly reason: undefined; readonly status: "closed" };
-
-type OutputBridgeReadiness = OutputBridgeFailure | { readonly status: "ready" };
-
-interface OutputBridge {
-  abort(reason: unknown): Promise<void>;
-  commit(): Promise<OutputBridgeSettlement>;
-  readonly completion: Promise<OutputBridgeSettlement>;
-  readonly ready: Promise<OutputBridgeReadiness>;
-  readonly requestOutput: import("./protocol.js").AudioStreamWorkerOutputPort;
-  readonly transfer: Transferable[];
-}
+type OutputBridge = MessagePortOutputBridge;
 
 /** Creates a serial, bounded-memory module Worker for streaming operations. */
 export function createAudioTranscoderStreamWorkerEngine(
@@ -850,7 +830,7 @@ function createOutputBridge(output: AudioStreamOutput): OutputBridge {
     );
   }
 
-  return createMessagePortOutputBridge(output) as OutputBridge;
+  return createMessagePortOutputBridge(output);
 }
 
 function createWorker(workerFactory: (() => Worker) | undefined): Worker {
