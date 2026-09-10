@@ -1,7 +1,7 @@
 # Browser integration
 
 `@echovisionlab/audio-transcoder` performs audio work in the browser. A module Web Worker
-keeps codec work off the UI thread; it is not a server backend. Local `Blob` and
+keeps codec work off the UI thread. Local `Blob` and
 `File` inputs are never uploaded. An explicit HTTP input may fetch bounded byte
 ranges from a consumer-owned endpoint; the package does not resolve media or
 provide a proxy. No ffmpeg installation is required. It is licensed for
