@@ -651,6 +651,23 @@ describe('MediaBunny stream encoder adapter', () => {
     expect(mocks.outputCancel).toHaveBeenCalledOnce();
   });
 
+  it('preserves the finalization error through failed cleanup and repeated finalization', async () => {
+    const finalizationError = new Error('encoder flush failed');
+    const cleanupError = new Error('encoder cleanup failed');
+    mocks.outputFinalize.mockRejectedValue(finalizationError);
+    mocks.outputCancel.mockRejectedValue(cleanupError);
+    const encoder = await createEncoder();
+
+    await expect(encoder.finalize()).rejects.toBe(finalizationError);
+    await expect(encoder.finalize()).rejects.toBe(finalizationError);
+
+    // Retrying must neither flush the source twice nor retry failed cleanup.
+    expect(mocks.closeSource).toHaveBeenCalledOnce();
+    expect(mocks.outputCancel).toHaveBeenCalledOnce();
+    await expect(encoder.cancel()).rejects.toBe(cleanupError);
+    expect(mocks.outputCancel).toHaveBeenCalledOnce();
+  });
+
   it('reports a direct cancellation cleanup failure', async () => {
     const failure = new Error('cancel failed');
     mocks.outputCancel.mockRejectedValue(failure);
