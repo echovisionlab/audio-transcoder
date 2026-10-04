@@ -215,16 +215,22 @@ async function createStreamingResamplerWithSessionFactory(
         return;
       }
       let flushedFrames = 0;
+      // Extend the finite signal by one zero source frame before declaring EOF.
+      // libsamplerate's mono sinc path can otherwise stop one output frame
+      // early at exact rational boundaries (44.1 kHz -> 8 kHz). The output
+      // quota remains based on the original input, so this adds no duration.
+      let endpointGuard = new Float32Array(channels);
       while (flushedFrames < requiredFrames) {
         const requestedFrames = Math.min(
           maxOutputFrames,
           requiredFrames - flushedFrames,
         );
         const flushed = processChunk(
-          new Float32Array(0),
+          endpointGuard,
           requestedFrames * channels,
           true,
         );
+        endpointGuard = new Float32Array(0);
         const availableFrames = flushed.length / channels;
         if (availableFrames === 0) break;
         flushedFrames += availableFrames;

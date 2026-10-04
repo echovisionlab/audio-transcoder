@@ -464,7 +464,7 @@ describe('MediaBunny stream encoder adapter', () => {
     await expect(
       adapter.create(createConfiguration({ signal: controller.signal })),
     ).rejects.toMatchObject({ code: 'OPERATION_ABORTED' });
-    expect(mocks.closeSource).toHaveBeenCalledOnce();
+    expect(mocks.closeSource).not.toHaveBeenCalled();
     expect(mocks.outputCancel).toHaveBeenCalledOnce();
   });
 
@@ -651,22 +651,40 @@ describe('MediaBunny stream encoder adapter', () => {
     expect(mocks.outputCancel).toHaveBeenCalledOnce();
   });
 
-  it('cancels an active output and ignores cleanup failure', async () => {
-    mocks.outputCancel.mockRejectedValue(new Error('cancel failed'));
+  it('reports a direct cancellation cleanup failure', async () => {
+    const failure = new Error('cancel failed');
+    mocks.outputCancel.mockRejectedValue(failure);
     const encoder = await createEncoder();
 
-    await expect(encoder.cancel()).resolves.toBeUndefined();
+    await expect(encoder.cancel()).rejects.toBe(failure);
     expect(mocks.outputCancel).toHaveBeenCalledOnce();
   });
 
-  it('closes encoder input resources only once across repeated cancellation', async () => {
+  it('force-closes output only once without starting a graceful source flush', async () => {
     const encoder = await createEncoder();
 
     await encoder.cancel();
     await encoder.cancel();
 
-    expect(mocks.closeSource).toHaveBeenCalledOnce();
-    expect(mocks.outputCancel).toHaveBeenCalledTimes(2);
+    expect(mocks.closeSource).not.toHaveBeenCalled();
+    expect(mocks.outputCancel).toHaveBeenCalledOnce();
+  });
+
+  it('awaits force-close cleanup when the operation signal is already aborted', async () => {
+    const controller = new AbortController();
+    const adapter = createMediaBunnyStreamEncoderAdapter(vi.fn());
+    const encoder = await adapter.create(createConfiguration({ signal: controller.signal }));
+    let release!: () => void;
+    mocks.outputCancel.mockReturnValue(new Promise<void>((resolve) => { release = resolve; }));
+    controller.abort();
+    let settled = false;
+    const cancellation = encoder.cancel().then(() => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(mocks.closeSource).not.toHaveBeenCalled();
+    release();
+    await cancellation;
+    expect(settled).toBe(true);
   });
 
   it.each(['canceled', 'finalized'] as const)(
