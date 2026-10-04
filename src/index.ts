@@ -10,6 +10,7 @@ export { createAudioTranscoderEngine } from './engine/factory.js';
 export { createAudioTranscoderWorkerEngine } from './worker/client.js';
 export { createAudioTranscoderWorkerPool } from './worker/pool.js';
 export { createAudioTranscoderStreamEngine } from './stream/engine.js';
+export { createDefaultAudioTranscoderStreamCodecRuntime } from './stream/runtime/default.js';
 export { exposeAudioTranscoderStreamWorker } from './stream/expose-worker.js';
 export { createAudioTranscoderStreamWorkerEngine } from './stream/client.js';
 export { createAudioTranscoderStreamWorkerPool } from './stream/pool.js';

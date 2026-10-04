@@ -171,14 +171,18 @@ async function createMediaBunnyEncoder(
     };
     output.addAudioTrack(source);
 
-    const cancel = async (): Promise<void> => {
-      closeSource();
-      if (output.state !== 'canceled' && output.state !== 'finalized') {
-        await raceWithOperationAbort(
-          output.cancel(),
-          configuration.signal,
-        ).catch(() => undefined);
-      }
+    let cancellation: Promise<void> | undefined;
+    const cancel = (): Promise<void> => {
+      // MediaSource.close() starts a normal flush in a detached promise.
+      // Cancellation must instead let Output force-close the encoder, and
+      // await that cleanup even when the operation signal is already aborted.
+      sourceClosed = true;
+      cancellation ??= (async () => {
+        if (output.state !== 'canceled' && output.state !== 'finalized') {
+          await output.cancel();
+        }
+      })();
+      return cancellation;
     };
 
     return {
@@ -193,7 +197,9 @@ async function createMediaBunnyEncoder(
           );
           throwIfAborted(configuration.signal);
         } catch (error) {
-          await cancel();
+          // Preserve the finalization failure; direct cancel callers still
+          // receive a cleanup failure from cancel().
+          await cancel().catch(() => undefined);
           throw error;
         }
       },
