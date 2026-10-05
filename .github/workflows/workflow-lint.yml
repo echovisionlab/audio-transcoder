@@ -28,7 +28,7 @@ jobs:
       - name: Lint workflows
         env:
           GOWORK: off
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
       - name: Validate release configuration
         run: |

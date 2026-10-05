@@ -1,6 +1,6 @@
 # Pinned after direct source and license review during the streaming refactor.
 minimumReleaseAgeExclude:
-  - mediabunny@1.55.1
+  - mediabunny@1.61.3
 overrides:
   '@types/dom-mediacapture-transform>@types/dom-webcodecs': 0.1.13
 patchedDependencies:
