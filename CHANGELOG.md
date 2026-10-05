@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/echovisionlab/audio-transcoder/compare/v0.2.0...v0.2.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **deps:** refresh media processing and package tooling ([#11](https://github.com/echovisionlab/audio-transcoder/issues/11)) ([2460068](https://github.com/echovisionlab/audio-transcoder/commit/24600686f0677b075562e45e776f17d56e950ed8))
+
 ## [0.2.0](https://github.com/echovisionlab/audio-transcoder/compare/v0.1.2...v0.2.0) (2026-10-04)
 
 
