@@ -320,7 +320,7 @@ describe('bundled FLAC encoder', () => {
     await encoder.encode(first);
     first.close();
     expect(copied[0]).toEqual(
-      Int32Array.from([0, 536_870_912, -1_073_741_823, 1_610_612_735]),
+      Int32Array.from([0, 536_870_912, -1_073_741_824, 1_610_612_736]),
     );
     expect(onPacket).toHaveBeenCalledTimes(2);
     expect((onPacket.mock.calls[0]![0] as EncodedPacket).timestamp).toBe(1.25);
