@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/echovisionlab/audio-transcoder/compare/v0.2.1...v0.2.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* **deps:** update Vite and fast-uri ([#14](https://github.com/echovisionlab/audio-transcoder/issues/14)) ([b83065c](https://github.com/echovisionlab/audio-transcoder/commit/b83065c770efadbf37857b3640ce3723435a2020))
+
 ## [0.2.1](https://github.com/echovisionlab/audio-transcoder/compare/v0.2.0...v0.2.1) (2026-10-05)
 
 
